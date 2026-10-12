@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cinema Agent</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="app">
+        <div id="loading" class="overlay" aria-hidden="true">
+            <div class="spinner"></div>
+            <div class="loading-text">Generating...</div>
+        </div>
+        <header class="app-header">
+            <h1>🎬 Cinema Agent</h1>
+            <p>Create, refine, and rewrite screenplay elements.</p>
+        </header>
+
+        <main class="app-main">
+            <section class="chat">
+                <div id="chat-log" class="chat-log"></div>
+                <div class="chat-input">
+                    <select id="action-select" title="Action">
+                        <option value="full_run">Full run</option>
+                        <option value="rewrite_scene">Rewrite scene</option>
+                        <option value="rewrite_characters">Rewrite characters</option>
+                        <option value="rewrite_plot">Rewrite plot</option>
+                    </select>
+                    <input id="target-scene" type="number" placeholder="Scene #" min="1" class="scene-input" />
+                    <input id="user-input" type="text" placeholder="Type your request..." />
+                    <button id="send-btn">Send</button>
+                </div>
+            </section>
+
+            <section class="results">
+                <div class="tabs">
+                    <button class="tab active" data-tab="outline">Outline</button>
+                    <button class="tab" data-tab="characters">Characters</button>
+                    <button class="tab" data-tab="dialogues">Dialogues</button>
+                    <button class="tab" data-tab="final">Final Script</button>
+                </div>
+                <div class="tab-panels">
+                    <div id="panel-outline" class="tab-panel active"><div class="content" id="outline"></div></div>
+                    <div id="panel-characters" class="tab-panel"><div class="content" id="characters"></div></div>
+                    <div id="panel-dialogues" class="tab-panel"><div class="content" id="dialogues"></div></div>
+                    <div id="panel-final" class="tab-panel"><div class="content" id="final"></div></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/script.js"></script>
+</body>
+</html>
+

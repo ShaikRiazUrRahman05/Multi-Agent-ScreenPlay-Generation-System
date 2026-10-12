@@ -1,76 +1,187 @@
-# LangGraph Cinema Agent
+# Multi-Agent Screenplay Generation System
 
-AI-first toolchain that turns a one-line movie idea into a screenplay. A FastAPI service orchestrates a LangGraph pipeline (Plotter → Character → Dialogue → Editor) backed by OpenAI models, persistent vector memory, and a MongoDB-powered auth/profile layer. Two frontends are available: a minimal vanilla JS UI served from `static/` and a richer Vite + React experience in `frontend/`.
+An AI-powered screenplay generation platform that transforms a simple movie idea into a structured screenplay through a coordinated pipeline of specialized AI agents.
 
-## Highlights
-- **Multi-agent workflow**: Plotter builds the outline, Character enriches bios, Dialogue drafts scenes (supports targeted rewrites), Editor polishes the final script.
-- **Semantic memory**: `memory/vector_memory.py` stores outlines, characters, and dialogues in a Chroma collection so partial rewrites can reuse and merge prior context.
-- **Secure auth & settings**: JWT-based auth with hashed passwords; optional per-user OpenAI key is encrypted with `SECRET_KEY` before storage.
-- **Flexible UIs**: Out-of-the-box static dashboard at `/` plus the ScriptAI React app with tabs, diffed scene rewrites, and PDF export.
+Built with **Python, FastAPI, LangGraph, OpenAI, MongoDB, and React**, the system separates story planning, character development, dialogue writing, and screenplay refinement into distinct stages.
 
-## Project Layout
-- `main.py` – FastAPI entrypoint, mounts `static/`, exposes `/api/run` and auth/profile routers.
-- `workflow/` – LangGraph definition (`graph.py`, `states.py`) describing pipeline order and rewrite routing.
-- `agents/` – LLM workers: `plotter.py`, `character.py`, `dialogue.py`, `editor.py`.
-- `memory/` & `memory_store/` – Vector memory wrapper (Chroma + OpenAI embeddings) and persisted data.
-- `db/`, `core/`, `schemas/`, `routers/` – Mongo client, security utilities, Pydantic models, and API routers.
-- `static/` – Minimal HTML/JS/CSS UI served by FastAPI.
-- `frontend/` – Vite/React frontend (shadcn UI, React Query, router, PDF export).
+## Overview
 
-## Workflow
-- `POST /api/run` accepts `{ user_input, user_action?, target_scene? }`.
-  - `user_action`: `full_run` (default), `rewrite_scene` (+ `target_scene`), `rewrite_characters`, `rewrite_plot`.
-  - The graph starts at Plotter unless a rewrite routes directly to Character or Dialogue.
-  - Dialogue agent can merge rewritten scenes with prior dialogue via vector recall; Editor always produces the final screenplay.
+Creating a screenplay involves more than generating text. It requires a coherent plot, consistent characters, engaging dialogue, and a polished narrative.
 
-## API Surface
-- `POST /api/run` → `{ outline, characters, dialogues, final_script }`.
-- `POST /api/auth/signup` / `POST /api/auth/login` → `{ access_token, token_type }` (JWT bearer).
-- `GET /api/profile/me` / `PUT /api/profile/me` → profile fields.
-- `PUT /api/profile/me/api-settings` → update `useOwnKey`, `openaiKey` (encrypted), `keyActive`.
+This project addresses that challenge through a multi-agent workflow in which each agent focuses on a specific creative responsibility. LangGraph coordinates the workflow, while language models generate and refine the screenplay at each stage.
 
-## Environment
-Create a `.env` beside `main.py`:
+## Key Features
 
+- **Multi-Agent Workflow:** Specialized agents collaborate to develop and refine a screenplay.
+- **Plot Generation:** Develops the initial story structure from a user-provided movie idea.
+- **Character Development:** Builds character profiles and motivations that support the story.
+- **Dialogue Generation:** Produces dialogue aligned with the characters and narrative.
+- **Screenplay Refinement:** Reviews and improves the generated content for consistency and readability.
+- **Persistent Memory:** Uses vector-based memory to support relevant context retrieval across interactions.
+- **User Authentication:** Provides registration, login, and profile management backed by MongoDB.
+- **Multiple Frontends:** Includes a lightweight JavaScript interface and a React-based application.
+
+## Architecture
+
+The application follows a modular architecture with a dedicated backend, agent workflow, memory layer, database integration, and frontend interfaces.
+
+```text
+                    User Idea
+                        |
+                        v
+                 FastAPI Backend
+                        |
+                        v
+                LangGraph Workflow
+                        |
+                        v
+                 Plotter Agent
+                        |
+                        v
+                Character Agent
+                        |
+                        v
+                 Dialogue Agent
+                        |
+                        v
+                  Editor Agent
+                        |
+                        v
+               Refined Screenplay
+                        |
+                        v
+                  User Interface
 ```
-OPENAI_API_KEY="sk-..."    # required for all LLM + embedding calls
-MONGO_URI="mongodb://localhost:27017"
-MONGO_DB_NAME="cinema_agent"
-SECRET_KEY="change-me"     # used for JWT + encryption
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
+
+The workflow is organized into specialized stages, making the system easier to extend, test, and maintain.
+
+## Tech Stack
+
+| Component | Technologies |
+|---|---|
+| Backend | Python, FastAPI |
+| Agent Orchestration | LangGraph |
+| Language Models | OpenAI API |
+| Memory | Vector-based retrieval |
+| Database | MongoDB |
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS and component-based UI |
+| Additional Interface | HTML, CSS, JavaScript |
+
+## Project Structure
+
+```text
+.
+├── agents/
+│   ├── plotter.py
+│   ├── character.py
+│   ├── dialogue.py
+│   └── editor.py
+├── core/
+│   └── security.py
+├── db/
+│   └── mongo.py
+├── frontend/
+│   └── src/
+├── memory/
+│   └── vector_memory.py
+├── routers/
+│   ├── auth.py
+│   └── profile.py
+├── schemas/
+│   └── user.py
+├── static/
+├── workflow/
+│   ├── graph.py
+│   └── states.py
+├── main.py
+└── requirements.txt
 ```
 
-## Backend Setup & Run
-1) Python 3.10+ recommended. Create a venv.
-2) Install deps:
-   ```bash
-   pip install -r requirements.txt motor python-jose[cryptography] passlib cryptography
-   ```
-3) Start API:
-   ```bash
-   uvicorn main:api --reload --port 8000
-   ```
-   The static UI is at `http://localhost:8000/`; API lives under `/api/*`.
+## Getting Started
 
-## Frontend Options
-- **Static UI (default)**: already built in `static/` and served by FastAPI; no extra setup.
-- **ScriptAI React app** (`frontend/`):
-  1. `cd script-muse-ai-29`
-  2. Edit `.env` (already present) or set `VITE_API_BASE=http://localhost:8000`
-  3. `npm install` (or `bun install`)
-  4. `npm run dev` → open the printed URL. Use `npm run build` for a production bundle.
+### Prerequisites
 
-## Data & Persistence
-- Chroma store persists under `memory_store/`; delete the folder to start fresh.
-- MongoDB holds users and encrypted per-user OpenAI keys. Passwords are hashed with PBKDF2 via passlib; JWTs use `SECRET_KEY` and `HS256`.
+Ensure you have the following installed:
 
-## Quick Test (cURL)
+- Python 3.10 or a compatible version for the dependencies
+- Node.js and npm
+- MongoDB
+- An OpenAI API key
+
+### 1. Clone the repository
+
 ```bash
-curl -X POST http://localhost:8000/api/run \
-  -H "Content-Type: application/json" \
-  -d '{"user_input":"Buddy-cop comedy in space", "user_action":"full_run"}'
+git clone https://github.com/ShaikRiazUrRahman05/Multi-Agent-ScreenPlay-Generation-System.git
+cd Multi-Agent-ScreenPlay-Generation-System
 ```
 
-## Notes
-- The repo includes a pre-filled `memory_store/`; remove it if you don’t want previous runs influencing similarity recall.
-- If you deploy the ScriptAI app separately, point `VITE_API_BASE` to your FastAPI host and serve the built `dist/` via any static host.
+### 2. Set up the backend
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+On Windows, activate it using:
+
+```bash
+venv\Scripts\activate
+```
+
+Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure environment variables
+
+Create a `.env` file in the project root and configure the variables required by your application.
+
+For example:
+
+```env
+OPENAI_API_KEY=your_openai_api_key
+MONGODB_URI=your_mongodb_connection_string
+```
+
+Use the exact variable names expected by your implementation. Keep real credentials private and never commit your `.env` file.
+
+### 4. Start the backend
+
+```bash
+uvicorn main:app --reload
+```
+
+Open `http://127.0.0.1:8000` to access the backend.
+
+If enabled, interactive API documentation is available at `http://127.0.0.1:8000/docs`.
+
+### 5. Run the React frontend
+
+Open a new terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Use the local URL printed by Vite to access the frontend.
+
+The repository also contains a lightweight interface under `static/`; follow the backend configuration for accessing it.
+
+## How It Works
+
+1. **Input:** The user submits a short movie concept.
+2. **Plot generation:** The Plotter Agent develops the story direction.
+3. **Character development:** The Character Agent establishes the characters and their motivations.
+4. **Dialogue writing:** The Dialogue Agent creates dialogue consistent with the narrative.
+5. **Editing:** The Editor Agent refines the generated screenplay.
+6. **Output:** The application presents the resulting screenplay through its interface.
+
+LangGraph manages the workflow and state transitions between the stages, while the memory layer supports contextual retrieval where configured.
+
